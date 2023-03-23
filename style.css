@@ -1,0 +1,52 @@
+body {
+    font-family: 'Courier New', Courier, monospace;
+}
+
+#header {
+    text-align: center;
+    width: 100%;
+    color: azure;
+}
+
+#search {
+    width: 100%;
+    display: flex;
+    align-items: center;
+}
+
+#search p {
+    margin: 20px;
+    font-size: 16pt;
+}
+
+#search button {
+    margin: 20px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 12pt;
+}
+
+#search input {
+    height: 20px;
+    color: black !important;
+}
+
+#map {
+    height: calc(100vh - 155px);
+    width: 100%;
+}
+
+.legend {
+    line-height: 18px;
+    color:white;
+}
+
+.legend i {
+    border-radius: 50%;
+    background:#ebf436;
+    opacity: 0.7;
+    display:block;
+    margin: 0px auto;
+    margin-top: 5%;
+    margin-bottom: 5%;
+    text-align:center;
+}

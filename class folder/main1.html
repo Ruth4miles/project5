@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <!--Leaflet tutorials  were integral and embedded in the code below
+https://leafletjs.com/examples.html was an incredible resource.-->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+      integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+      crossorigin=""/>
+
+      <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+  integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+  crossorigin=""></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.js" type="text/javascript"></script>
+
+
+ <!-- Made possibe through the following resource https://www.eclipse.org/paho/index.php?page=clients/js/index.php -->
+
+<script type="text/javascript">
+  // Create a client instance based on the users input
+   function giveInput(){
+    var startButton = document.getElementById('startButton');
+    var endButton = document.getElementById('endButton');
+    var choosehost = document.getElementById('choosehost').value;
+    var chooseport = document.getElementById('chooseport').value;
+ 
+ }
+client = new Paho.MQTT.Client("test.mosquitto.org" , 8080, "RuthMaze");
+
+// set callback handlers
+client.onConnectionLost = onConnectionLost;
+client.onMessageArrived = onMessageArrived;
+
+// connect the client
+client.connect({onSuccess:onConnect});
+
+
+// Called when the client connects
+function onConnect() {
+      console.log("Connected to MQTT broker");
+      isConnected = true;
+      updateUI();
+      // Subscribe to the temperature topic
+      client.subscribe("<ENGO_651>/<Ruth_Ekeh_AND_Chimezie_Azih>/my_temperature");
+    }
+  
+    // Called when the client loses its connection
+    function onConnectionLost(responseObject) {
+      console.log("Connection lost: " + responseObject.errorMessage);
+      isConnected = false;
+      updateUI();
+    }
+  
+    // Called when a message arrives
+function onMessageArrived(message) {
+  console.log("Message arrived: " + message.payloadString);
+  var topic = message.destinationName;
+  var payload = message.payloadString;
+  if (topic === "<ENGO_651>/<Ruth_Ekeh_AND_Chimezie_Azih>") {
+    // Parse the payload as JSON
+    var data = JSON.parse(payload);
+    
+    // Extract the temperature and humidity values
+    var temperature = data.temperature;
+    var humidity = data.humidity;
+    
+    // Display the values on the HTML page
+    document.getElementById("temperature").innerHTML = temperature;
+    document.getElementById("humidity").innerHTML = humidity;
+    
+    // Update the chart data
+    chartData.labels.push(new Date().toLocaleTimeString());
+    chartData.datasets[0].data.push(temperature);
+    chartData.datasets[1].data.push(humidity);
+    
+    // Redraw the chart
+    chart.update();
+  }
+}
+
+// Connect to the MQTT broker
+client.connect({
+  onSuccess: function() {
+    console.log("Connected to MQTT broker");
+    // Subscribe to the topic
+    client.subscribe("<ENGO_651>/<Ruth_Ekeh_AND_Chimezie_Azih>");
+  },
+  onFailure: function() {
+    console.log("Failed to connect to MQTT broker");
+  }
+});
+
+// Create the chart
+var ctx = document.getElementById("myChart").getContext("2d");
+var chartData = {
+  labels: [],
+  datasets: [
+    {
+      label: "Temperature (C)",
+      data: [],
+      borderColor: "red",
+      fill: false
+    },
+    {
+      label: "Humidity (%)",
+      data: [],
+      borderColor: "blue",
+      fill: false
+    }
+  ]
+};
+var chart = new Chart(ctx, {
+  type: "line",
+  data: chartData
+});
+
+// Called when a message arrives
+function onMessageArrived(message) {
+  console.log("Message arrived: " + message.payloadString);
+  var topic = message.destinationName;
+  var payload = message.payloadString;
+  if (topic === "<ENGO_651>/<Ruth_Ekeh_AND_Chimezie_Azih>/temperature") {
+    // Add temperature data to the chart
+    var data = chartData.datasets[0].data;
+    var labels = chartData.labels;
+    var date = new Date();
+    var timestamp = date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds();
+    data.push(payload);
+    labels.push(timestamp);
+    chart.update();
+  } else if (topic === "<ENGO_651>/<Ruth_Ekeh_AND_Chimezie_Azih>/humidity") {
+    // Add humidity data to the chart
+    var data = chartData.datasets[1].data;
+    var labels = chartData.labels;
+    var date = new Date();
+    var timestamp = date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds();
+    data.push(payload);
+    labels.push(timestamp);
+    chart.update();
+  }
+}
+</script>
+    <title>Main Page for the Application</title>
+    <style>
+  html, body {
+    height: 100%;
+    margin: 0;
+  }
+  .leaflet-container {
+    height: 400px;
+    width: 600px;
+    max-width: 100%;
+    max-height: 100%;
+  }
+  body {
+    text-align: center;
+    background-color: rgb(75, 1, 1);
+    color: white;
+  }
+  h1, h2, h3{
+    font-family: Arial, Helvetica, sans-serif;
+  }
+</style>
+  </head>
+  <body>
+    <h1>Lab 5 Mapping time</h1>
+    <br>
+    <form>
+  <label for="choosehost">Host</label><br>
+  <input type="text" id="choosehost" name="choosehost"><br>
+  <label for="chooseport">Port</label><br>
+  <input type="text" id="chooseport" name="chooseport"><br>
+  <button type="submit" name="button">Submit Values</button>
+</form>
+<br>
+    <div id="map" style="width: 100%; height: 70%;"></div>
+
+    <script>
+
+      var dateMax = new Date();
+      var dateMin = new Date(1980, 0, 1);
+
+
+
+    	var map = L.map('map').setView([51.0447, -114.0719], 11);
+
+
+      var tiles = L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoicnV0aGVrZWgiLCJhIjoiY2xlaTBsM25uMGhyZjNycGExMXJscWQ0MiJ9.bF1pWBYY3SFU9185P1BtZw', {
+              tileSize: 512,
+              zoomOffset: -1,
+              attribution: '© <a href="https://www.mapbox.com/contribute/">Mapbox</a> © <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+          }).addTo(map);
+
+
+    //if( hehe == "False"){
+    var tiles = L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoicnV0aGVrZWgiLCJhIjoiY2xlaTBsM25uMGhyZjNycGExMXJscWQ0MiJ9.bF1pWBYY3SFU9185P1BtZw', {
+            tileSize: 512,
+            zoomOffset: -1,
+            attribution: '© <a href="https://www.mapbox.com/contribute/">Mapbox</a> © <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        }).addTo(map);
+
+
+    </script>
+<br>
+<!-- The following code was enabled by the following resource https://developer.mozilla.org/en-US/docs/Web/API/Geolocation_API/Using_the_Geolocation_API -->
+    <button id = "find-me">Where am I</button><br/>
+
+<p id = "status"></p>
+<a id = "map-link" target="_blank"></a>
+<script>
+  function geoFindMe() {
+
+const status = document.querySelector('#status');
+const mapLink = document.querySelector('#map-link');
+
+mapLink.href = '';
+mapLink.textContent = '';
+
+
+function success(position) {
+const latitude  = position.coords.latitude;
+const longitude = position.coords.longitude;
+var myMarker = L.marker([position.coords.latitude, position.coords.longitude]).addTo(map);
+
+status.textContent = '';
+mapLink.href = `https://www.openstreetmap.org/#map=18/${latitude}/${longitude}`;
+mapLink.textContent = `Latitude: ${latitude} °, Longitude: ${longitude} °`;
+}
+
+function error() {
+status.textContent = 'Unable to retrieve your location';
+}
+
+if(!navigator.geolocation) {
+status.textContent = 'Geolocation is not supported by your browser';
+} else {
+status.textContent = 'Locating…';
+navigator.geolocation.getCurrentPosition(success, error);
+}
+}
+
+document.querySelector('#find-me').addEventListener('click', geoFindMe);
+</script>
+    <br>
+<button type="button" onclick= "disconnect()" name="button">Please Disconnect</button>
+<br>
+<br>
+.
+
+  </body>
+</html>
