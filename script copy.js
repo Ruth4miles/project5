@@ -1,30 +1,39 @@
+// initialization 
+let connected_flag = 0;
+let mqtt;
+const reconnectTimeout = 4000;
+let marker;
+let json;
+let marker_id = null;
+
+// Set the visibility of the mqtt-div
+function divVis(condition) {
+    document.getElementById('mqtt-div').style.display = condition;
+ }
+
 // Set-up
-var connected_flag = 0;
-var mqtt;
-var reconnectTimeout = 2000;
-var marker;
-var json;
-var marker_id = null;
-
-// Page set-up
 document.getElementById("stop-butt").disabled = true;
-showDiv("none");
+divVis("none");
 
-// Define the map centered on Calgary
+// Define the center of the map (Calgary)
 var map = L.map('map').setView([51.039439, -114.054339], 11);
 
 // Add the basemap
-var tiles = L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoicnV0aGVrZWgiLCJhIjoiY2xlaTBsM25uMGhyZjNycGExMXJscWQ0MiJ9.bF1pWBYY3SFU9185P1BtZw', {
+var basemap = L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
+    attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, ' +
+        '<a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
+        'Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+    maxZoom: 18,
+    id: 'mapbox/dark-v9',
     tileSize: 512,
     zoomOffset: -1,
-    attribution: '© <a href="https://www.mapbox.com/contribute/">Mapbox</a> © <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+    accessToken: 'pk.eyJ1IjoicnV0aGVrZWgiLCJhIjoiY2xlaTBsM25uMGhyZjNycGExMXJscWQ0MiJ9.bF1pWBYY3SFU9185P1BtZw'
 }).addTo(map);
-
 // Create a group so store markers
 var markerGroup = L.layerGroup().addTo(map);
 
 
-function MQTTconnect(){
+function connMQTT(){
     // Get the host and port info
     var host = document.getElementById("host").value;
     var port = parseInt(document.getElementById("port").value);
@@ -35,16 +44,21 @@ function MQTTconnect(){
     }
     
     // Check if a username and course were entered
-    if (document.getElementById("username").value=="" || document.getElementById("course").value == ""){
-        document.getElementById("status").innerHTML = "Username and/or course are invalid.";
+    var username = document.getElementById("username").value;
+    var course = document.getElementById("course").value;
+    
+    if (!username || !course) {
+      document.getElementById("status").innerHTML = "Please enter a valid username and course.";
     }
+    
     
     // Clear the status
     document.getElementById("status").innerHTML = "";
 
     // Connect to the broker via a websocket
-    mqtt = new Paho.MQTT.Client(host=host, port=port, clientId='client-' + Math.floor(Math.random() * 100000))
-    
+    mqtt = new Paho.MQTT.Client(host, port, 'client-' + Math.floor(Math.random() * 100000));
+
+
     // Set the connection options
     var options = {
         timeout: 3,
@@ -61,10 +75,8 @@ function MQTTconnect(){
     mqtt.connect(options);
 
     // Limit user to change information
-    document.getElementById("host").readOnly = true;
-    document.getElementById("port").readOnly = true;
-    document.getElementById("username").readOnly  = true;
-    document.getElementById("course").readOnly  = true;
+    $("#host, #port, #username, #course").prop("readonly", true);
+
 
     // Disable buttons
     document.getElementById("start-butt").disabled = true;
@@ -80,7 +92,7 @@ function onConnectionLost(response){
     alert('Connection Lost! Attempting to reconnect...');
     
     // Reconnect
-    setTimeout(MQTTconnect, reconnectTimeout);
+    setTimeout(connMQTT, reconnectTimeout);
 }
 
 
@@ -89,7 +101,7 @@ function onFailure(message){
     document.getElementById("status").innerHTML = "Failed";
 
     // Reconnect
-    setTimeout(MQTTconnect, reconnectTimeout);
+    setTimeout(connMQTT, reconnectTimeout);
 }
 
 
@@ -125,7 +137,7 @@ function onConnect() {
     connected_flag = 1
 
     // Show mqtt-div
-    showDiv("block");
+    divVis("block");
 
     // Subscribe to get location and temp updates
     var username = document.getElementById("username").value;
@@ -318,13 +330,7 @@ function MQTTdisconnect(){
     document.getElementById("stop-butt").disabled = true;
 
     // Hide mqtt-div
-    showDiv("none");
+    divVis("none");
 }
 
-
-// Set the visibility of the mqtt-div
-function showDiv(condition) {
-    document.getElementById('mqtt-div').style.display = condition;
- }
-Footer
 
