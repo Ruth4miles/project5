@@ -1,16 +1,16 @@
 // initialization 
 let connected_flag = 0;
 let mqtt;
-const reconnectTimeout = 4000;
+let reconnectTimeout = 4000;
 let marker;
 let json;
 let marker_id = null;
 
 function divVis(condition) {
-    document.getElementById('mqtt-div').style.display = condition;
+    document.getElementById('div-mqt').style.display = condition;
  }
 
-document.getElementById("stop-butt").disabled = true;
+document.getElementById("end-butt").disabled = true;
 divVis("none");
 
 var map = L.map('map').setView([51.039439, -114.054339], 11);
@@ -66,28 +66,27 @@ function connMQTT(){
 
 
     document.getElementById("start-butt").disabled = true;
-    document.getElementById("stop-butt").disabled = false;
+    document.getElementById("end-butt").disabled = false;
 }
-
 
 function onConnectionLost(response){
     document.getElementById("status").innerHTML = "Connection Lost";
-
-    alert('Connection Lost! Attempting to reconnect...');
-    
-    setTimeout(connMQTT, reconnectTimeout);
+    alert('No connection! reconnecting...');
+    setTimeout(function() {
+        connMQTT();
+    }, reconnectTimeout);
 }
 
 function onFailure(message){
     document.getElementById("status").innerHTML = "Failed";
-
-    setTimeout(connMQTT, reconnectTimeout);
+    setTimeout(function() {
+        connMQTT();
+    }, reconnectTimeout);
 }
 
 
 function onMessageArrived(r_message){
     var topic = r_message.destinationName;
-
     document.getElementById("topic").innerHTML = topic;
 
     var username = document.getElementById("username").value;
@@ -117,42 +116,42 @@ function onConnect() {
 
 
 function send_message(topic, value){
-    message = new Paho.MQTT.Message(value);
+    var message = new Paho.MQTT.Message(value);
     message.destinationName = topic;
 
     mqtt.send(message);
 }
 
 
-function pub() {
-    if (connected_flag == 0) {
-        out_msg = "<b> Not Connected so can't send </b>"
-        console.log(out_msg);
-        document.getElementById("messages").innerHTML = out_msg;
+function publ() {
+    if (connected_flag === 0) {
+        var conn_res = "<b> Cannot send due to disconnection</b>";
+        console.log(conn_res);
+        document.getElementById("messages").innerHTML = conn_res;
     }
 
-    var topic = document.getElementById("publish-topic").value;
-    var value = document.getElementById("publish-message").value;
+    var topic = document.getElementById("topic-pub").value;
+    var value = document.getElementById("message-pub").value;
 
     if (topic == "") {
-        document.getElementById("publish-topic").value = "";
-        document.getElementById("publish-message").value = "";
+        document.getElementById("topic-pub").value = "";
+        document.getElementById("message-pub").value = "";
         console.log("Topic is invalid.");
         return false;
     }
 
     send_message(topic, value);
-    document.getElementById("publish-topic").value = "";
-    document.getElementById("publish-message").value = "";
+    document.getElementById("topic-pub").value = "";
+    document.getElementById("message-pub").value = "";
 
 }
 
 
 function pub_status(){
     if (connected_flag == 0) {
-        out_msg = "<b>Not Connected so can't send</b>"
-        console.log(out_msg);
-        document.getElementById("messages").innerHTML = out_msg;
+        conn_res = "<b>Cannot send due to disconnection issues</b>"
+        console.log(conn_res);
+        document.getElementById("messages").innerHTML = conn_res;
     }
 
     if (navigator.geolocation) {
@@ -189,9 +188,9 @@ function display_msg(topic, msg){
 
 function sub_topics(con) {
     if (connected_flag == 0) { 
-        out_msg = "<b>Not Connected so san't subscribe</b>"
-        console.log(out_msg);
-        document.getElementById("messages").innerHTML = out_msg;
+        conn_res = "<b>Cannot Subscribe due to disconnection</b>"
+        console.log(conn_res);
+        document.getElementById("messages").innerHTML = conn_res;
     }
 
     var stopic = document.getElementById("subscribe-topic").value;
@@ -238,23 +237,20 @@ function createMarker(json){
 
 
 function MQTTdisconnect(){
-    try {
+    try{
         mqtt.disconnect();
-    } catch {}
-    
+    } catch{}
 
-    document.getElementById("status").innerHTML = "";
+    var inputs =["host","port","username","course"];
+    inputs.forEach((input) => {
+        document.getElementById(input).readOnly =false;
+    });
     
-    document.getElementById("host").readOnly = false;
-    document.getElementById("port").readOnly = false;
-    document.getElementById("username").readOnly = false;
-    document.getElementById("course").readOnly = false;
-
+    document.getElementById( "status").innerHTML = "";
 
     document.getElementById("start-butt").disabled = false;
-    document.getElementById("stop-butt").disabled = true;
+    document.getElementById("end-butt").disabled = true;
 
     divVis("none");
-}
-
+};
 
