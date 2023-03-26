@@ -1,4 +1,4 @@
-// initialization 
+// initialization and setting up page
 let connected_flag = 0;
 let mqtt;
 let reconnectTimeout = 4000;
@@ -13,6 +13,7 @@ function divVis(condition) {
 document.getElementById("end-butt").disabled = true;
 divVis("none");
 
+//Setting up the basemap  with the city of Calgary as focus
 var map = L.map('map').setView([51.039439, -114.054339], 11);
 
 var basemap = L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
@@ -28,7 +29,7 @@ var basemap = L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{
 
 var markerGroup = L.layerGroup().addTo(map);
 
-
+//Setting up the MQTT function and appropriate checks
 function connMQTT(){
     var host = document.getElementById("host").value;
     var port = parseInt(document.getElementById("port").value);
@@ -44,11 +45,11 @@ function connMQTT(){
       document.getElementById("status").innerHTML = "Please enter a valid username and course.";
     }
     
-    
+    //Status clearance
     document.getElementById("status").innerHTML = "";
-
+    
+    //Setting up broker connection through websocket and other relevant settings
     mqtt = new Paho.MQTT.Client(host, port, 'client-' + Math.floor(Math.random() * 100000));
-
 
     var options = {
         timeout: 3,
@@ -57,6 +58,7 @@ function connMQTT(){
         useSSL: true,
     };
 
+    
     mqtt.onConectionLost = onConnectionLost;
     mqtt.onMessageArrived = onMessageArrived;
     
@@ -64,11 +66,12 @@ function connMQTT(){
 
     $("#host, #port, #username, #course").prop("readonly", true);
 
-
+    //Functionality for disabling buttons
     document.getElementById("start-butt").disabled = true;
     document.getElementById("end-butt").disabled = false;
 }
 
+//Functionalities for connection issues response
 function onConnectionLost(response){
     document.getElementById("status").innerHTML = "Connection Lost";
     alert('No connection! reconnecting...');
@@ -84,7 +87,7 @@ function onFailure(message){
     }, reconnectTimeout);
 }
 
-
+// Functionality for arrived message
 function onMessageArrived(r_message){
     var topic = r_message.destinationName;
     document.getElementById("topic").innerHTML = topic;
@@ -101,20 +104,21 @@ function onMessageArrived(r_message){
     document.getElementById("message").innerHTML = r_message.payloadString;    
 }
 
-
+//Functionalities for active connection.
 function onConnect() {
     document.getElementById("status").innerHTML = "Connected";
     connected_flag = 1
 
     divVis("block");
 
+    
     var username = document.getElementById("username").value;
     var course = document.getElementById("course").value;
     var topic = course.replaceAll(' ', '_') + "/" + username.replaceAll(' ', '_') + "/my_temperature";
     mqtt.subscribe(topic);
 }
 
-
+//functionality for messages
 function send_message(topic, value){
     var message = new Paho.MQTT.Message(value);
     message.destinationName = topic;
@@ -122,7 +126,7 @@ function send_message(topic, value){
     mqtt.send(message);
 }
 
-
+//Functionality for assigning messages to topics
 function publ() {
     if (connected_flag === 0) {
         var conn_res = "<b> Cannot send due to disconnection</b>";
@@ -146,7 +150,7 @@ function publ() {
 
 }
 
-
+//Functionality for publishing topics
 function pub_status(){
     if (connected_flag == 0) {
         conn_res = "<b>Cannot send due to disconnection issues</b>"
@@ -154,6 +158,7 @@ function pub_status(){
         document.getElementById("messages").innerHTML = conn_res;
     }
 
+    //Functionality for acquiring real-time locations
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(createGeoJSON);
     } else { 
@@ -161,6 +166,7 @@ function pub_status(){
     }
 }
 
+//Functionality to establish and send geojson
 function createGeoJSON(position) {
     geojson = JSON.stringify({
         "type": "Feature",
@@ -185,7 +191,7 @@ function display_msg(topic, msg){
     document.getElementById("message").innerHTML = msg;
 }
 
-
+//Setting up functionality for subscription
 function sub_topics(con) {
     if (connected_flag == 0) { 
         conn_res = "<b>Cannot Subscribe due to disconnection</b>"
@@ -213,7 +219,7 @@ function sub_topics(con) {
     document.getElementById("subscribe-topic").value = "";
 }
 
-
+//Creating Marker and marker functionality for the map
 function createMarker(json){
 
     if (marker_id != null) {
@@ -235,12 +241,13 @@ function createMarker(json){
     marker_id = marker._leaflet_id;
 }
 
-
+//Disconnection
 function MQTTdisconnect(){
     try{
         mqtt.disconnect();
     } catch{}
 
+    //Status updates and resetting of input fields
     var inputs =["host","port","username","course"];
     inputs.forEach((input) => {
         document.getElementById(input).readOnly =false;
